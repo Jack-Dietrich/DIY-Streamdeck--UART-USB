@@ -7,10 +7,55 @@
   Written by Limor Fried/Ladyada for Adafruit Industries, with contributions from the open source community. BSD license, check license.txt for more information All text above, and the splash screen below must be included in any redistribution. 
 *********/
 
+
+
+/*
+Notes:
+Button layout
+
+[1] [2] [3]
+
+[4] [5] [6]
+
+1 - GPIO 23
+2 - GPIO 19
+3 - GPIO 18
+
+
+Logic analyzer starts at ch0 - red
+
+using CP2102 USB TO UART BRIDGE 
+rxd - yellow/purple wire
+txd - green/white wire
+*/
+
+
+
+
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
+
+typedef enum {//Button definitions
+  BUTTON1 = 23,
+  BUTTON2 = 19,
+  BUTTON3 = 18,
+};
+
+//freeRTOS setup
+static SemaphoreHandle_t mutex; //mutex for UART COMMUNICATION
+static QueueHandle_t buttonQueue; //queue for dealing with button interrupts
+
+//structure we will be sending to the buttonqueue for interrrupt handling
+typedef struct buttonMsg {
+  int buttonNum;
+};
+
+
+
+//end of freeRTOS setup
 
 #define SCREEN_WIDTH 128 // OLED display width, in pixels
 #define SCREEN_HEIGHT 64 // OLED display height, in pixels
@@ -334,11 +379,25 @@ static const unsigned char PROGMEM logo_bmp[] =
   }
 
 
-
+  void BUTTON_ISR(){
+    buttonMsg msg;
+    xQueueSendFromISR(buttonQueue, &msg, NULL);//send the message to the queue, NULL because not waking up any task
+  }
 
 
 void setup() {
   Serial.begin(115200);
+
+  //pin setups(all button's are inputs as they are pulled high when pressed)
+  pinMode(BUTTON1,INPUT);
+  pinMode(BUTTON2,INPUT);
+  pinMode(BUTTON3,INPUT);
+
+  //interrupt setups
+  attachInterrupt(BUTTON1,BUTTON_ISR,RISING);
+  attachInterrupt(BUTTON2,BUTTON_ISR,RISING);
+  attachInterrupt(BUTTON3,BUTTON_ISR,RISING);
+
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
   if(!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { 
@@ -402,6 +461,15 @@ void setup() {
 }
 
 void loop() {
+
+  //read from queue and send a macro to usb
+
+  buttonMsg buff;
+
+  if(xQueueReceive(buttonQueue,&buff,0)){//if we recieve something from the queue
+    //call function to send keypresses to macro
+  }
+
 }
 
 
