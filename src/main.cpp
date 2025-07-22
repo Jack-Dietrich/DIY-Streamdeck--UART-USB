@@ -27,6 +27,8 @@ Logic analyzer starts at ch0 - red
 using CP2102 USB TO UART BRIDGE 
 rxd - yellow/purple wire
 txd - green/white wire
+
+
 */
 
 
@@ -386,7 +388,9 @@ static const unsigned char PROGMEM logo_bmp[] =
 
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(115200);//serial for communication via built in usb port
+  Serial2.begin(9600); //initalize serial communication via external USB adapter (could be 1 or 2?)
+  Serial1.begin(9600);
 
   //pin setups(all button's are inputs as they are pulled high when pressed)
   pinMode(BUTTON1,INPUT);
@@ -397,6 +401,9 @@ void setup() {
   attachInterrupt(BUTTON1,BUTTON_ISR,RISING);
   attachInterrupt(BUTTON2,BUTTON_ISR,RISING);
   attachInterrupt(BUTTON3,BUTTON_ISR,RISING);
+
+  //create queue and attach handle
+  buttonQueue = xQueueCreate(10,sizeof(buttonMsg));
 
 
   // SSD1306_SWITCHCAPVCC = generate display voltage from 3.3V internally
@@ -425,31 +432,6 @@ void setup() {
   // drawing operations and then update the screen all at once by calling
   // display.display(). These examples demonstrate both approaches...
 
-  testdrawline();      // Draw many lines
-
-  testdrawrect();      // Draw rectangles (outlines)
-
-  testfillrect();      // Draw rectangles (filled)
-
-  testdrawcircle();    // Draw circles (outlines)
-
-  testfillcircle();    // Draw circles (filled)
-
-  testdrawroundrect(); // Draw rounded rectangles (outlines)
-
-  testfillroundrect(); // Draw rounded rectangles (filled)
-
-  testdrawtriangle();  // Draw triangles (outlines)
-
-  testfilltriangle();  // Draw triangles (filled)
-
-  testdrawchar();      // Draw characters of the default font
-
-  testdrawstyles();    // Draw 'stylized' characters
-
-  testscrolltext();    // Draw scrolling text
-
-  testdrawbitmap();    // Draw a small bitmap image
 
   // Invert and restore display, pausing in-between
   display.invertDisplay(true);
@@ -457,17 +439,24 @@ void setup() {
   display.invertDisplay(false);
   delay(1000);
 
-  testanimate(logo_bmp, LOGO_WIDTH, LOGO_HEIGHT); // Animate bitmaps
 }
 
 void loop() {
 
   //read from queue and send a macro to usb
 
+
+  //debugging purposes
+
+
+
   buttonMsg buff;
 
-  if(xQueueReceive(buttonQueue,&buff,0)){//if we recieve something from the queue
+  if(xQueueReceive(buttonQueue,&buff,0) == pdTRUE){//if we recieve something from the queue
     //call function to send keypresses to macro
+
+    Serial2.write("Button Pressed");
+
   }
 
 }
