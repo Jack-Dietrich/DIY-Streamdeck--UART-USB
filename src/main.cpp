@@ -455,7 +455,7 @@ void loop() {
   if(xQueueReceive(buttonQueue,&buff,0) == pdTRUE){//if we recieve something from the queue
     //call function to send keypresses to macro
 
-    Serial2.write("Button Pressed");
+    Serial2.println("Button Pressed");
 
   }
 
